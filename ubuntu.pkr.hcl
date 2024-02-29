@@ -1,3 +1,75 @@
+// vSphere Credentials
+
+variable "vsphere_endpoint" {
+  type        = string
+  description = "The fully qualified domain name or IP address of the vCenter Server instance."
+}
+
+variable "vsphere_username" {
+  type        = string
+  description = "The username to login to the vCenter Server instance."
+  sensitive   = true
+}
+
+variable "vsphere_password" {
+  type        = string
+  description = "The password for the login to the vCenter Server instance."
+  sensitive   = true
+}
+
+variable "vsphere_insecure_connection" {
+  type        = bool
+  description = "Do not validate vCenter Server TLS certificate."
+}
+
+// vSphere Settings
+
+variable "vsphere_datacenter" {
+  type        = string
+  description = "The name of the target vSphere datacenter."
+  default     = ""
+}
+
+variable "vsphere_cluster" {
+  type        = string
+  description = "The name of the target vSphere cluster."
+  default     = ""
+}
+
+variable "vsphere_host" {
+  type        = string
+  description = "The name of the target ESXi host."
+  default     = ""
+}
+
+variable "vsphere_datastore" {
+  type        = string
+  description = "The name of the target vSphere datastore."
+}
+
+variable "vsphere_network" {
+  type        = string
+  description = "The name of the target vSphere network segment."
+}
+
+variable "vsphere_folder" {
+  type        = string
+  description = "The name of the target vSphere folder."
+  default     = ""
+}
+
+variable "vsphere_resource_pool" {
+  type        = string
+  description = "The name of the target vSphere resource pool."
+  default     = ""
+}
+
+variable "vsphere_set_host_for_datastore_uploads" {
+  type        = bool
+  description = "Set this to true if packer should use the host for uploading files to the datastore."
+  default     = false
+}
+
 variable "ssh_username" {
   type    = string
   description = "The username to use to authenticate over SSH."
@@ -8,13 +80,6 @@ variable "ssh_username" {
 variable "ssh_password" {
   type    = string
   description = "The plaintext password to use to authenticate over SSH."
-  default = ""
-  sensitive = true
-}
-
-variable "matt_password" {
-  type    = string
-  description = "The plaintext password to use to authenticate user matt over SSH."
   default = ""
   sensitive = true
 }
@@ -301,7 +366,22 @@ source "vmware-iso" "ubuntu-generic" {
   ovftool_options = ["-dm=thin", "--maxVirtualHardwareVersion=19" ]
 }
 
-source "vmware-iso" "ubuntu-rancher" {
+source "vsphere-iso" "ubuntu-rancher" {
+  // vCenter Server Endpoint Settings and Credentials
+  vcenter_server      = var.vsphere_endpoint
+  username            = var.vsphere_username
+  password            = var.vsphere_password
+  insecure_connection = var.vsphere_insecure_connection
+
+  // vSphere Settings
+  datacenter                     = var.vsphere_datacenter
+  cluster                        = var.vsphere_cluster
+  host                           = var.vsphere_host
+  datastore                      = var.vsphere_datastore
+  folder                         = var.vsphere_folder
+  resource_pool                  = var.vsphere_resource_pool
+  set_host_for_datastore_uploads = var.vsphere_set_host_for_datastore_uploads
+
   guest_os_type = var.vm_guest_os_type
   vm_name = var.rancher_vm_name
   cpus = var.vm_cpu_sockets
@@ -406,23 +486,23 @@ source "vmware-iso" "ubuntu-20-generic" {
 build {
   name = "generic"
   sources = [
-    "vmware-iso.ubuntu-generic",
+    #"vmware-iso.ubuntu-generic",
     "vmware-iso.ubuntu-rancher",
-    "vmware-iso.ubuntu-rancherlonghorn",
-    "vmware-iso.ubuntu-20-generic"
+    #"vmware-iso.ubuntu-rancherlonghorn",
+    #"vmware-iso.ubuntu-20-generic"
     ]
   provisioner "file" {
     source = "files/postbuild_job.sh"
     destination = "/tmp/postbuild_job.sh"
   }
-  provisioner "shell" {
-    inline = [
-      "sed -i 's/REPLACE_FQDN/${var.check_mk_fqdn}/' /tmp/postbuild_job.sh",
-      "sed -i 's/REPLACE_SITE/${var.check_mk_site}/' /tmp/postbuild_job.sh",
-      "sed -i 's/REPLACE_USERNAME/${var.check_mk_username}/' /tmp/postbuild_job.sh",
-      "sed -i 's/REPLACE_PASSWORD/${var.check_mk_password}/' /tmp/postbuild_job.sh"
-    ]
-  }
+  #provisioner "shell" {
+  #  inline = [
+  #    "sed -i 's/REPLACE_FQDN/${var.check_mk_fqdn}/' /tmp/postbuild_job.sh",
+  #    "sed -i 's/REPLACE_SITE/${var.check_mk_site}/' /tmp/postbuild_job.sh",
+  #    "sed -i 's/REPLACE_USERNAME/${var.check_mk_username}/' /tmp/postbuild_job.sh",
+  #    "sed -i 's/REPLACE_PASSWORD/${var.check_mk_password}/' /tmp/postbuild_job.sh"
+  #  ]
+  #}
   provisioner "shell" {
     execute_command = "echo '${var.ssh_password}' | {{.Vars}} sudo -S -E bash '{{.Path}}'"
     environment_vars = [
@@ -438,20 +518,20 @@ build {
   provisioner "shell" {
     inline = ["sudo mv /tmp/99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg"]
   }
-  provisioner "file" {
-    source = "files/secure/homelabrootcert.crt"
-    destination = "/tmp/homelabrootcert.crt"
-  }
-  provisioner "file" {
-    source = "files/homelabntp.conf"
-    destination = "/tmp/homelabntp.conf"
-  }  
-  provisioner "shell" {
-    inline = [
-      "sudo mv /tmp/homelabrootcert.crt /usr/local/share/ca-certificates/homelabroot.crt",
-      "sudo update-ca-certificates",
-      "echo 'matt:${var.matt_password}' | sudo chpasswd",
-      "sudo passwd -u matt"
-    ]
-  }
+  #provisioner "file" {
+  #  source = "files/secure/homelabrootcert.crt"
+  #  destination = "/tmp/homelabrootcert.crt"
+  #}
+  #provisioner "file" {
+  #  source = "files/homelabntp.conf"
+  #  destination = "/tmp/homelabntp.conf"
+  #}  
+  #provisioner "shell" {
+  #  inline = [
+  #    "sudo mv /tmp/homelabrootcert.crt /usr/local/share/ca-certificates/homelabroot.crt",
+  #    "sudo update-ca-certificates",
+  #    "echo 'matt:${var.matt_password}' | sudo chpasswd",
+  #    "sudo passwd -u matt"
+  #  ]
+  #}
 }

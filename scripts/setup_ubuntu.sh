@@ -3,15 +3,15 @@ echo '> Moving firstboot script...'
 mv /tmp/postbuild_job.sh /usr/local/bin/postbuild_job.sh
 echo ' Setting firstboot script to executable...'
 chmod +x /usr/local/bin/postbuild_job.sh
-echo '> Moving NTP config...'
-mkdir /etc/systemd/timesyncd.conf.d
-mv /tmp/homelabntp.conf /etc/systemd/timesyncd.conf.d/homelabntp.conf
+#echo '> Moving NTP config...'
+#mkdir /etc/systemd/timesyncd.conf.d
+#mv /tmp/homelabntp.conf /etc/systemd/timesyncd.conf.d/homelabntp.conf
 echo '> Executing apt-get dist-upgrade...'
 apt-get -y dist-upgrade
-echo '> Installing Checkmk Agent...'
-wget http://checkmk.mattconnley.com/homelab/check_mk/agents/check-mk-agent_2.2.0p2-1_all.deb -O /root/check-mk-agent_2.2.0p2-1_all.deb
-dpkg -i /root/check-mk-agent_2.2.0p2-1_all.deb
-rm /root/check-mk-agent_2.2.0p2-1_all.deb
+#echo '> Installing Checkmk Agent...'
+#wget http://checkmk.mattconnley.com/homelab/check_mk/agents/check-mk-agent_2.2.0p2-1_all.deb -O /root/check-mk-agent_2.2.0p2-1_all.deb
+#dpkg -i /root/check-mk-agent_2.2.0p2-1_all.deb
+#rm /root/check-mk-agent_2.2.0p2-1_all.deb
 echo '> Cleaning apt-get ...'
 apt-get -y autoremove
 apt-get -y clean
