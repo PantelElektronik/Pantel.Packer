@@ -1,3 +1,14 @@
+// packer config
+packer {
+  required_version  = ">= 1.7.0"
+  required_plugins{
+    vsphere = {
+      version = "= 1.2.5"
+      source  = "github.com/hashicorp/vsphere"
+    }
+  }
+}
+
 // vSphere Credentials
 
 variable "vsphere_endpoint" {
@@ -70,6 +81,8 @@ variable "vsphere_set_host_for_datastore_uploads" {
   default     = false
 }
 
+// SSH
+
 variable "ssh_username" {
   type    = string
   description = "The username to use to authenticate over SSH."
@@ -80,34 +93,6 @@ variable "ssh_username" {
 variable "ssh_password" {
   type    = string
   description = "The plaintext password to use to authenticate over SSH."
-  default = ""
-  sensitive = true
-}
-
-variable "check_mk_fqdn" {
-  type    = string
-  description = "The fqdn of the checkmk server."
-  default = ""
-  sensitive = true
-}
-
-variable "check_mk_site" {
-  type    = string
-  description = "The checkmk site to join."
-  default = ""
-  sensitive = true
-}
-
-variable "check_mk_username" {
-  type    = string
-  description = "The username to authenticate to checkmk"
-  default = ""
-  sensitive = true
-}
-
-variable "check_mk_password" {
-  type    = string
-  description = "The password to authenticate to checkmk"
   default = ""
   sensitive = true
 }
@@ -159,6 +144,12 @@ variable "http_directory" {
 }
 
 # Virtual Machine Settings
+
+variable "vm_firmware" {
+  type        = string
+  description = "The virtual machine firmware."
+  default     = "efi-secure"
+}
 
 variable "vm_guest_os_family" {
   type    = string
@@ -226,18 +217,6 @@ variable vm_version {
   # https://kb.vmware.com/s/article/1003746
 }
 
-variable "vm_firmware" {
-  type    = string
-  description = "The virtual machine firmware. (e.g. 'bios' or 'efi')"
-  default = ""
-}
-
-variable "vm_cdrom_type" {
-  type    = string
-  description = "The virtual machine CD-ROM type."
-  default = ""
-}
-
 variable "vm_cpu_sockets" {
   type = number
   description = "The number of virtual CPUs sockets."
@@ -248,14 +227,44 @@ variable "vm_cpu_cores" {
   description = "The number of virtual CPUs cores per socket."
 }
 
+variable "vm_cpu_hot_add" {
+  type        = bool
+  description = "Enable hot add CPU."
+  default     = false
+}
+
 variable "vm_mem_size" {
   type = number
   description = "The size for the virtual memory in MB."
 }
 
+variable "vm_mem_hot_add" {
+  type        = bool
+  description = "Enable hot add memory."
+  default     = false
+}
+
+variable "vm_cdrom_type" {
+  type        = string
+  description = "The virtual machine CD-ROM type."
+  default     = "sata"
+}
+
+variable "vm_disk_controller_type" {
+  type        = list(string)
+  description = "The virtual disk controller types in sequence."
+  default     = ["pvscsi"]
+}
+
 variable "vm_disk_size" {
   type = number
   description = "The size for the main disk in MB."
+}
+
+variable "vm_disk_thin_provisioned" {
+  type        = bool
+  description = "Thin provision the virtual disk."
+  default     = true
 }
 
 variable "vm_docker_disk_size" {
@@ -270,21 +279,34 @@ variable "vm_longhorn_disk_size" {
   default = 32768
 }
 
-variable "vm_disk_controller_type" {
-  type = list(string)
-  description = "The virtual disk controller types in sequence."
-}
-
 variable "vm_network_card" {
-  type = string
+  type        = string
   description = "The virtual network card type."
-  default = ""
+  default     = "vmxnet3"
 }
 
 variable "vm_boot_wait" {
   type = string
   description = "The time to wait before boot. "
   default = ""
+}
+
+variable "common_remove_cdrom" {
+  type        = bool
+  description = "Remove the virtual CD-ROM(s)."
+  default     = true
+}
+
+variable "vm_cdrom_count" {
+  type        = string
+  description = "The number of virtual CD-ROMs remaining after the build."
+  default     = 1
+}
+
+variable "common_tools_upgrade_policy" {
+  type        = bool
+  description = "Upgrade VMware Tools on reboot."
+  default     = true
 }
 
 variable "shell_scripts" {
@@ -323,12 +345,33 @@ variable "vm_shutdown_command_text" {
   default = ""
 }
 
+variable "common_ip_wait_timeout" {
+  type        = string
+  description = "Time to wait for guest operating system IP address response."
+  default     = "90s"
+}
+
+variable "common_ip_settle_timeout" {
+  type        = string
+  description = "Time to wait for guest operating system IP to settle down."
+  default     = "5s"
+}
+
+// Boot
+variable "vm_boot_order" {
+  type        = string
+  description = "The boot order for virtual machines devices."
+  default     = "disk,cdrom"
+}
+
 ##################################################################################
 # LOCALS
 ##################################################################################
 
 locals {
-  buildtime = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
+  buildtime         = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
+  build_by          = "Built by: Pantel"
+  build_description = "Built on: ${local.buildtime}\n${local.build_by}"
 }
 
 ##################################################################################
@@ -382,36 +425,74 @@ source "vsphere-iso" "ubuntu-rancher" {
   resource_pool                  = var.vsphere_resource_pool
   set_host_for_datastore_uploads = var.vsphere_set_host_for_datastore_uploads
 
-  guest_os_type = var.vm_guest_os_type
-  vm_name = var.rancher_vm_name
-  cpus = var.vm_cpu_sockets
-  cores = var.vm_cpu_cores
-  memory = var.vm_mem_size
-  disk_adapter_type = "pvscsi"
-  disk_size = var.vm_disk_size
-  disk_additional_size = [var.vm_docker_disk_size]
-  disk_type_id = 0
-  network_adapter_type = "vmxnet3"
-  network = "NAT"
-  iso_url = var.iso_url
-  iso_checksum = var.iso_checksum
-  http_directory = var.http_directory
-  boot_wait = var.vm_boot_wait
-  boot_command = var.rancher_vm_boot_command
-  ssh_password = var.ssh_password
-  ssh_username = var.ssh_username
-  ssh_port = 22
-  ssh_timeout = "30m"
-  ssh_handshake_attempts = "100000"
-  shutdown_command = var.vm_shutdown_command_text
-  shutdown_timeout = "15m"
-  output_directory = "x:\\packer_builds\\ubuntu-rancher"
-  format = "ova"
-  vmx_data = { 
-    "vmx.scoreboard.enabled" = "FALSE" 
-    "virtualhw.version" = "19"
-    }
-  ovftool_options = ["-dm=thin", "--maxVirtualHardwareVersion=19" ]
+  // Virtual Machine Settings
+  vm_name              = var.rancher_vm_name
+  guest_os_type        = var.vm_guest_os_type
+  firmware             = var.vm_firmware
+  CPUs                 = var.vm_cpu_sockets
+  cpu_cores            = var.vm_cpu_cores
+  CPU_hot_plug         = var.vm_cpu_hot_add
+  RAM                  = var.vm_mem_size
+  RAM_hot_plug         = var.vm_mem_hot_add
+  cdrom_type           = var.vm_cdrom_type
+  disk_controller_type = var.vm_disk_controller_type
+  storage {
+    disk_size             = var.vm_disk_size
+    disk_thin_provisioned = var.vm_disk_thin_provisioned
+    #disk_additional_size  = [var.vm_docker_disk_size]
+    #disk_type_id          = 0
+  }
+  network_adapters {
+    network      = var.vsphere_network
+    network_card = var.vm_network_card
+  }
+  vm_version           = var.vm_version
+  remove_cdrom         = var.common_remove_cdrom
+  reattach_cdroms      = var.vm_cdrom_count
+  #tools_upgrade_policy = var.common_tools_upgrade_policy
+  notes                = local.build_description
+
+  // Removable media settings
+  iso_url              = var.iso_url
+  iso_checksum         = var.iso_checksum
+  #http_content         = var.common_data_source == "http" ? local.data_source_content : null
+  #cd_content           = var.common_data_source == "disk" ? local.data_source_content : null
+  #cd_label             = var.common_data_source == "disk" ? "cidata" : null
+
+  // SSH
+  communicator         = "ssh"
+  ssh_password         = var.ssh_password
+  ssh_username         = var.ssh_username
+  ssh_port             = 22
+  ssh_timeout          = "10m"
+  ssh_handshake_attempts = "10000"
+
+  // Power settings
+  shutdown_command     = var.vm_shutdown_command_text
+  shutdown_timeout     = "15m"
+
+  // IP settings
+  ip_wait_timeout   = var.common_ip_wait_timeout
+  ip_settle_timeout = var.common_ip_settle_timeout
+
+   // Boot and Provisioning Settings
+  #http_ip       = var.common_data_source == "http" ? var.common_http_ip : null
+  http_ip               = "10.10.12.5"
+  http_directory        = var.http_directory
+  http_port_min         = 80
+  http_port_max         = 80
+  boot_order            = var.vm_boot_order
+  boot_wait             = var.vm_boot_wait
+  boot_command          = var.rancher_vm_boot_command
+
+  // Template settings
+  #format = "ova"
+  #vmx_data = { 
+  #  "vmx.scoreboard.enabled" = "FALSE" 
+  #  "virtualhw.version" = "19"
+  #  }
+  #ovftool_options = ["-dm=thin", "--maxVirtualHardwareVersion=19" ]
+  
 }
 
 source "vmware-iso" "ubuntu-rancherlonghorn" {
@@ -487,7 +568,7 @@ build {
   name = "generic"
   sources = [
     #"vmware-iso.ubuntu-generic",
-    "vmware-iso.ubuntu-rancher",
+    "vsphere-iso.ubuntu-rancher",
     #"vmware-iso.ubuntu-rancherlonghorn",
     #"vmware-iso.ubuntu-20-generic"
     ]
@@ -518,20 +599,4 @@ build {
   provisioner "shell" {
     inline = ["sudo mv /tmp/99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg"]
   }
-  #provisioner "file" {
-  #  source = "files/secure/homelabrootcert.crt"
-  #  destination = "/tmp/homelabrootcert.crt"
-  #}
-  #provisioner "file" {
-  #  source = "files/homelabntp.conf"
-  #  destination = "/tmp/homelabntp.conf"
-  #}  
-  #provisioner "shell" {
-  #  inline = [
-  #    "sudo mv /tmp/homelabrootcert.crt /usr/local/share/ca-certificates/homelabroot.crt",
-  #    "sudo update-ca-certificates",
-  #    "echo 'matt:${var.matt_password}' | sudo chpasswd",
-  #    "sudo passwd -u matt"
-  #  ]
-  #}
 }
