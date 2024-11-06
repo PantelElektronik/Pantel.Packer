@@ -267,12 +267,6 @@ variable "vm_disk_thin_provisioned" {
   default     = true
 }
 
-variable "vm_docker_disk_size" {
-  type = number
-  description = "The size for the Docker disk in MB."
-  default = 32768
-}
-
 variable "vm_longhorn_disk_size" {
   type = number
   description = "The size for the Docker disk in MB."
@@ -439,7 +433,6 @@ source "vsphere-iso" "ubuntu-rancher" {
   storage {
     disk_size             = var.vm_disk_size
     disk_thin_provisioned = var.vm_disk_thin_provisioned
-    #disk_additional_size  = [var.vm_docker_disk_size]
     #disk_type_id          = 0
   }
   network_adapters {
@@ -479,8 +472,8 @@ source "vsphere-iso" "ubuntu-rancher" {
   #http_ip       = var.common_data_source == "http" ? var.common_http_ip : null
   http_ip               = "10.10.12.5"
   http_directory        = var.http_directory
-  http_port_min         = 80
-  http_port_max         = 80
+  http_port_min         = 5001
+  http_port_max         = 5001
   boot_order            = var.vm_boot_order
   boot_wait             = var.vm_boot_wait
   boot_command          = var.rancher_vm_boot_command
@@ -503,7 +496,7 @@ source "vmware-iso" "ubuntu-rancherlonghorn" {
   memory = var.vm_mem_size
   disk_adapter_type = "pvscsi"
   disk_size = var.vm_disk_size
-  disk_additional_size = [var.vm_docker_disk_size, var.vm_longhorn_disk_size]
+  disk_additional_size = [var.vm_longhorn_disk_size]
   disk_type_id = 0
   network_adapter_type = "vmxnet3"
   network = "NAT"

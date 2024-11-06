@@ -26,7 +26,7 @@ autoinstall:
     ethernets:
       ens192:
         dhcp4: no
-        dhcp6: no
+        #dhcp6: no
         addresses: [10.10.10.59/22]
         gateway4: 10.10.10.109
         nameservers:
@@ -37,6 +37,7 @@ autoinstall:
     allow-pw: yes
   storage:
     config:
+      ### SYSTEM ###
       - {
           ptable: gpt,
           path: /dev/sda,
@@ -47,16 +48,6 @@ autoinstall:
           type: disk,
           id: disk-sda,
         }
-      #- {
-      #    ptable: gpt,
-      #    path: /dev/sdb,
-      #    wipe: superblock-recursive,
-      #    preserve: false,
-      #    name: "",
-      #    grub_device: false,
-      #    type: disk,
-      #    id: disk-sdb,
-      #  }
       - {
           device: disk-sda,
           size: 1048576,
@@ -79,48 +70,67 @@ autoinstall:
           id: partition-1,
         }
       - {
-          fstype: ext4,
+          fstype: xfs,
           volume: partition-1,
           preserve: false,
           type: format,
           id: format-0,
         }
       - { path: /, device: format-0, type: mount, id: mount-0 }
-  #identity:
-  #  hostname: k8s-worker
-  #  username: user
-  #  password: '41oNB3L949tVM'
+      ### LONGHORN ###
+%{ if vm_longhorn_partition ~}
+      - {
+          ptable: gpt,
+          path: /dev/sdb,
+          wipe: superblock-recursive,
+          preserve: false,
+          name: "",
+          grub_device: false,
+          type: disk,
+          id: disk-sdb,
+        }
+      - {
+          device: disk-sdb,
+          size: -1,
+          wipe: superblock,
+          flag: "",
+          number: 1,
+          preserve: false,
+          grub_device: false,
+          type: partition,
+          id: partition-2,
+        }
+      - {
+          fstype: xfs,
+          volume: partition-2,
+          preserve: false,
+          type: format,
+          id: format-1,
+        }
+      - { path: /var/lib/longhorn, device: format-1, type: mount, id: mount-1 }
+%{ endif ~}
+      
   packages:
     - openssh-server
     - open-vm-tools
     - cloud-init
-    #- net-tools
+    - net-tools
     #- salt-minion
     #- unzip
     #- nfs-common
-    #- docker.io
+    - docker.io
     #- at
     #- duf
   user-data:
     disable_root: false
-    #users:
-    #  - name: packer
-    #    passwd: "$6$rounds=4096$Y5ntVQ.n/fb5Fa$.sG.dw5tcSTC1P71YkvT6KNoEOAxEHiy3fexG553HZwznp3/DImxm.mCnoHlT8ejo.9nmUb0Ju.hlPTQZ4kb//"
-    #    lock-passwd: false
-    #    ssh_pwauth: True
-    #    chpasswd: { expire: False }
-    #    sudo: ALL=(ALL) NOPASSWD:ALL
     users:
       - default
-      - name: user
-        passwd: 41oNB3L949tVM
+      - name: ${vm_username}
+        passwd: ${vm_password_encrypted}
         lock_passwd: false
         shell: /bin/bash
         groups: [adm,sudo]
-        #chpasswd: { expire: False }
         sudo: ALL=(ALL) NOPASSWD:ALL
-        #ssh_authorized_keys:
-        #  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDI6FIMmDIzZJiZkf5QKrOcfDSaTCTG0UDP795Cee8joCsPhEzxzcn7bsaObWaP4nQMFW2n/ZcMRlkDAd+h0zjxYzHbY4kVxfwBoWkYtmVAvVsbaheKI5QiclA0zHLa7xYtnERlRuuehdvGu5fhjJcVkFg36YyBvbkVJCbpiL8xsPEU6pgU7FL91OW8/ScZjKqzIDt/CiAAia+HfZ2rNSfJN++foMOvTDv0DOzMzbOmM3sui3N3chBXeqzqonUNMB2fDHC2CKxqnEI0oabDaViYi9UffVE1JKhkuvgFq0IBc76AoU1m8Ar7J9XAHYOmBRFk8/g41Q27kTPNaTZULD2Z matt.connley@mcmacbookpro.mattconnley.com
   late-commands:
     - sed -i -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/g' /target/etc/ssh/sshd_config
     - sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' /target/etc/ssh/sshd_config

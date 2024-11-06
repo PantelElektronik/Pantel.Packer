@@ -9,8 +9,13 @@ autoinstall:
     version: 2
     ethernets:
       ens192:
-        dhcp4: true
-        dhcp-identifier: mac
+        dhcp4: no
+        #dhcp6: no
+        addresses: [10.10.10.59/22]
+        gateway4: 10.10.10.109
+        nameservers:
+          search: [pantel.local]
+          addresses: [10.10.10.130, 10.10.10.100]
   keyboard:
     layout: us
   ssh:
@@ -95,26 +100,7 @@ autoinstall:
           type: format,
           id: format-1,
         }
-      - { path: /var/lib/docker, device: format-1, type: mount, id: mount-1 }
-      - {
-          device: disk-sdc,
-          size: -1,
-          wipe: superblock,
-          flag: "",
-          number: 1,
-          preserve: false,
-          grub_device: false,
-          type: partition,
-          id: partition-3,
-        }
-      - {
-          fstype: xfs,
-          volume: partition-3,
-          preserve: false,
-          type: format,
-          id: format-2,
-        }
-      - { path: /var/lib/longhorn, device: format-2, type: mount, id: mount-2 }
+      - { path: /var/lib/longhorn, device: format-1, type: mount, id: mount-1 }
   packages:
     - open-vm-tools
     - net-tools
