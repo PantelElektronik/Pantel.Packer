@@ -9,13 +9,8 @@ autoinstall:
     version: 2
     ethernets:
       ens192:
-        dhcp4: no
-        #dhcp6: no
-        addresses: [10.10.10.59/22]
-        gateway4: 10.10.10.109
-        nameservers:
-          search: [pantel.local]
-          addresses: [10.10.10.130, 10.10.10.100]
+        dhcp4: true
+        dhcp-identifier: mac
   keyboard:
     layout: us
   ssh:
@@ -104,10 +99,11 @@ autoinstall:
   packages:
     - open-vm-tools
     - net-tools
-    - salt-minion
+    #- salt-minion
     - unzip
     - nfs-common
-    - docker.io
+    #- docker.io
+    - ntp
     - at
     - duf
   apt:

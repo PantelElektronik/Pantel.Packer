@@ -362,6 +362,7 @@ source "vsphere-iso" "ubuntu-rancher" {
 
   // Virtual Machine Settings
   vm_name              = var.vm_name
+  convert_to_template  = true
   guest_os_type        = var.vm_guest_os_type
   firmware             = var.vm_firmware
   CPUs                 = var.vm_cpu_sockets
@@ -410,7 +411,7 @@ source "vsphere-iso" "ubuntu-rancher" {
   ip_settle_timeout = var.ip_settle_timeout
 
    // Boot and Provisioning Settings
-  http_ip               = "10.10.10.9"
+  http_ip               = "10.10.12.10"
   http_content          = local.data_source_content
   http_port_min         = var.http_port
   http_port_max         = var.http_port
@@ -453,14 +454,27 @@ build {
     expect_disconnect = true
   }
 
-  ## Copy disable network cfg
+  # Copy network cfg
   provisioner "file" {
-    source = "files/99-disable-network-config.cfg"
-    destination = "/tmp/99-disable-network-config.cfg"
+    source = "files/01-packer-network-config.yaml"
+    destination = "/tmp/01-packer-network-config.yaml"
   }
 
-  ## Move network cfg
+  # Move network cfg
   provisioner "shell" {
-    inline = ["sudo mv /tmp/99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg"]
+    inline = ["sudo mv /tmp/01-packer-network-config.yaml /etc/netplan/01-packer-network-config.yaml"]
   }
+
+  # Apply netplan
+  provisioner "shell" {
+    inline = ["sudo netplan apply"]
+  }
+
+  #provisioner "file" {
+  #  source = "files/99-disable-network-config.cfg"
+  #  destination = "/tmp/99-disable-network-config.cfg"
+  #}
+  #provisioner "shell" {
+  #  inline = ["sudo mv /tmp/99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg"]
+  #}
 }

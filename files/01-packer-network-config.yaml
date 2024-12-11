@@ -1,0 +1,15 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    ens192:
+      link-local: [ipv4]
+      dhcp4: yes
+      dhcp6: no
+      #addresses: [10.10.10.40/22]
+      #routes:
+      #  - to: default
+      #    via: 10.10.10.109
+      nameservers:
+        search: [pantel.local]
+        addresses: [10.10.10.100]

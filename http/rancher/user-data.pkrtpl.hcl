@@ -16,22 +16,9 @@ autoinstall:
     #    source: "deb https://repo.saltproject.io/py3/ubuntu/20.04/amd64/latest focal main"
   early-commands:
     - sudo systemctl stop ssh
-  locale: en_EN
+  locale: en_US
   keyboard:
     layout: de
-  network:
-    network:
-    version: 2
-    renderer: networkd
-    ethernets:
-      ens192:
-        dhcp4: no
-        #dhcp6: no
-        addresses: [10.10.10.59/22]
-        gateway4: 10.10.10.109
-        nameservers:
-          search: [pantel.local]
-          addresses: [10.10.10.130, 10.10.10.100]
   ssh:
     install-server: yes
     allow-pw: yes
@@ -116,11 +103,12 @@ autoinstall:
     - cloud-init
     - net-tools
     #- salt-minion
-    #- unzip
-    #- nfs-common
-    - docker.io
-    #- at
-    #- duf
+    - unzip
+    - nfs-common
+    #- docker.io
+    - at
+    - duf
+    - ntp
   user-data:
     disable_root: false
     users:

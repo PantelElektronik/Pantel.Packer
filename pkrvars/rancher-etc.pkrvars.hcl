@@ -1,0 +1,1 @@
+vm_name                     = "ubuntu_etc_rancher_template"
