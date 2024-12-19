@@ -201,7 +201,7 @@ variable "vm_password" {
 
 variable "vm_password_encrypted" {
   type    = string
-  description = "The encrypted password to use to authenticate."
+  description = "The encrypted password to use to authenticate. Run  'mkpasswd --method=SHA-512' to create"
   default = ""
   sensitive = true
 }
@@ -411,7 +411,7 @@ source "vsphere-iso" "ubuntu-rancher" {
   ip_settle_timeout = var.ip_settle_timeout
 
    // Boot and Provisioning Settings
-  http_ip               = "10.10.12.10"
+  http_ip               = "10.10.12.1"
   http_content          = local.data_source_content
   http_port_min         = var.http_port
   http_port_max         = var.http_port
@@ -463,6 +463,17 @@ build {
   # Move network cfg
   provisioner "shell" {
     inline = ["sudo mv /tmp/01-packer-network-config.yaml /etc/netplan/01-packer-network-config.yaml"]
+  }
+
+  # Copy snmpd cfg
+  provisioner "file" {
+    source = "files/snmpd.conf"
+    destination = "/tmp/snmpd.conf"
+  }
+
+  # Move snmpd cfg
+  provisioner "shell" {
+    inline = ["sudo mv /tmp/snmpd.conf /etc/snmp/snmpd.conf"]
   }
 
   # Apply netplan

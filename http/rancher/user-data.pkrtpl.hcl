@@ -109,6 +109,8 @@ autoinstall:
     - at
     - duf
     - ntp
+    - snmp
+    - snmpd
   user-data:
     disable_root: false
     users:

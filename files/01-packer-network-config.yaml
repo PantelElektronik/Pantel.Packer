@@ -3,7 +3,7 @@ network:
   renderer: networkd
   ethernets:
     ens192:
-      link-local: [ipv4]
+      #link-local: [ipv4]
       dhcp4: yes
       dhcp6: no
       #addresses: [10.10.10.40/22]
@@ -11,5 +11,5 @@ network:
       #  - to: default
       #    via: 10.10.10.109
       nameservers:
-        search: [pantel.local]
+        search: [pantel.local, pantel.internal]
         addresses: [10.10.10.100]
