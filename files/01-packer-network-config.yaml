@@ -4,12 +4,12 @@ network:
   ethernets:
     ens192:
       #link-local: [ipv4]
-      dhcp4: yes
+      dhcp4: no
       dhcp6: no
-      #addresses: [10.10.10.40/22]
-      #routes:
-      #  - to: default
-      #    via: 10.10.10.109
+      addresses: [10.10.10.47/24]
+      routes:
+        - to: default
+          via: 10.10.10.254
       nameservers:
         search: [pantel.local, pantel.internal]
         addresses: [10.10.10.100]

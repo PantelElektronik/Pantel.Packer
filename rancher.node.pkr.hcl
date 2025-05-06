@@ -274,13 +274,13 @@ variable shutdown_timeout {
 variable "ip_wait_timeout" {
   type        = string
   description = "Time to wait for guest operating system IP address response."
-  default     = "90s"
+  default     = "180s"
 }
 
 variable "ip_settle_timeout" {
   type        = string
   description = "Time to wait for guest operating system IP to settle down."
-  default     = "5s"
+  default     = "25s"
 }
 
 ##################################################################################
